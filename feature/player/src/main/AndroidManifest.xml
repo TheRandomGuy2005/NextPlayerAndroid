@@ -20,10 +20,12 @@
 
         <activity
             android:name=".PlayerActivity"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode|keyboard|keyboardHidden|navigation"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/NextPlayer">
+            android:supportsPictureInPicture="true"
+            android:theme="@style/NextPlayer"
+            tools:targetApi="o">
 
             <!-- This filter captures protocols without type info -->
             <intent-filter>
