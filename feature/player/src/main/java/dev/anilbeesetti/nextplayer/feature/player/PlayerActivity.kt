@@ -168,6 +168,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var backButton: ImageButton
     private lateinit var exoContentFrameLayout: AspectRatioFrameLayout
     private lateinit var lockControlsButton: ImageButton
+    private lateinit var loopVideoButton: ImageButton
     private lateinit var nextButton: ImageButton
     private lateinit var playbackSpeedButton: ImageButton
     private lateinit var playerLockControls: FrameLayout
@@ -214,6 +215,7 @@ class PlayerActivity : AppCompatActivity() {
         backButton = binding.playerView.findViewById(R.id.back_button)
         exoContentFrameLayout = binding.playerView.findViewById(R.id.exo_content_frame)
         lockControlsButton = binding.playerView.findViewById(R.id.btn_lock_controls)
+        loopVideoButton = binding.playerView.findViewById(R.id.btn_loop_video)
         nextButton = binding.playerView.findViewById(R.id.btn_play_next)
         playbackSpeedButton = binding.playerView.findViewById(R.id.btn_playback_speed)
         playerLockControls = binding.playerView.findViewById(R.id.player_lock_controls)
@@ -476,7 +478,10 @@ class PlayerActivity : AppCompatActivity() {
             val videoZoom = playerPreferences.playerVideoZoom.next()
             applyVideoZoom(videoZoom = videoZoom, showInfo = true)
         }
-
+        loopVideoButton.setOnClickListener {
+            val videoLoop = if(player.repeatMode == Player.REPEAT_MODE_OFF) VideoLoop.LOOP_ALL else VideoLoop.LOOP_OFF
+            setVideoLoop(videoLoop = videoLoop, showInfo = true)
+        }
         videoZoomButton.setOnLongClickListener {
             VideoZoomOptionsDialogFragment(
                 currentVideoZoom = playerPreferences.playerVideoZoom,
@@ -567,6 +572,47 @@ class PlayerActivity : AppCompatActivity() {
                 controller?.play()
             }
         }
+    }
+
+    private fun setVideoLoop(videoLoop: VideoLoop, showInfo: Boolean) {
+        when (videoLoop) {
+            VideoLoop.LOOP_OFF -> {
+                player.repeatMode = Player.REPEAT_MODE_OFF
+                loopVideoButton.setImageResource(coreUiR.drawable.ic_repeat)
+            }
+
+            VideoLoop.LOOP_ONE -> {
+                player.repeatMode = Player.REPEAT_MODE_ONE
+                loopVideoButton.setImageResource(coreUiR.drawable.ic_repeat)
+            }
+
+            VideoLoop.LOOP_ALL -> {
+                player.repeatMode = Player.REPEAT_MODE_ALL
+                loopVideoButton.setImageResource(coreUiR.drawable.ic_repeat)
+            }
+        }
+        if (showInfo) {
+            lifecycleScope.launch {
+                binding.infoLayout.visibility = View.VISIBLE
+                binding.infoText.text = getString(videoLoop.nameRes())
+                delay(HIDE_DELAY_MILLIS)
+                binding.infoLayout.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun VideoLoop.nameRes(): Int {
+        val stringRes = when (this) {
+            VideoLoop.LOOP_OFF -> coreUiR.string.loop_off
+            VideoLoop.LOOP_ONE -> coreUiR.string.loop_current
+            VideoLoop.LOOP_ALL -> coreUiR.string.loop_all
+        }
+
+        return stringRes
+    }
+
+    enum class VideoLoop {
+        LOOP_OFF, LOOP_ONE, LOOP_ALL
     }
 
     private fun playbackStateListener() = object : Player.Listener {

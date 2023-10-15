@@ -96,7 +96,6 @@ class PlayerService : MediaSessionService() {
             release()
             mediaSession = null
         }
-        nextNotificationProvider.cancelCoroutineScope()
         super.onDestroy()
     }
 }

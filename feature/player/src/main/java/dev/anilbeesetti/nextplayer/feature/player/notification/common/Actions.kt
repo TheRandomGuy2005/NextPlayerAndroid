@@ -66,4 +66,14 @@ internal object Actions {
         titleResource = Media3R.string.exo_controls_next_description,
         command = Player.COMMAND_SEEK_TO_NEXT
     ).asNotificationAction(context, mediaSession, actionFactory)
+
+    internal fun getCancelServiceAction(
+        context: Context,
+        mediaSession: MediaSession,
+        actionFactory: MediaNotification.ActionFactory
+    ) = Action(
+        iconResource = R.drawable.ic_close,
+        titleResource = R.string.cancel,
+        command = Player.COMMAND_STOP
+    ).asNotificationAction(context, mediaSession, actionFactory)
 }

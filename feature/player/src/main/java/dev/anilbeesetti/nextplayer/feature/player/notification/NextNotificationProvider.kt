@@ -37,17 +37,17 @@ import kotlinx.coroutines.withContext
 
 @UnstableApi
 class NextNotificationProvider @Inject constructor(
-    @Dispatcher(Main) private val mainDispatcher: CoroutineDispatcher,
-    @Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context
 ) : MediaNotification.Provider {
     private val notificationManager = checkNotNull(context.getSystemService<NotificationManager>())
-    private val coroutineScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
-    override fun createNotification(mediaSession: MediaSession, customLayout: ImmutableList<CommandButton>, actionFactory: MediaNotification.ActionFactory, onNotificationChangedCallback: MediaNotification.Provider.Callback): MediaNotification {
+    override fun createNotification(
+        mediaSession: MediaSession,
+        customLayout: ImmutableList<CommandButton>,
+        actionFactory: MediaNotification.ActionFactory,
+        onNotificationChangedCallback: MediaNotification.Provider.Callback
+    ): MediaNotification {
         ensureNotificationChannel()
-
-        Glide.get(context).setMemoryCategory(MemoryCategory.LOW)
 
         val player = mediaSession.player
         val metadata = player.mediaMetadata
@@ -61,49 +61,29 @@ class NextNotificationProvider @Inject constructor(
         listOf(
             Actions.getSkipPreviousAction(context, mediaSession, actionFactory),
             Actions.getPlayPauseAction(context, mediaSession, actionFactory, player.playWhenReady),
-            Actions.getSkipNextAction(context, mediaSession, actionFactory)
+            Actions.getSkipNextAction(context, mediaSession, actionFactory),
+            Actions.getCancelServiceAction(context, mediaSession, actionFactory),
         ).forEach(builder::addAction)
 
-        setupArtwork(
-            uri = metadata.artworkUri,
-            setLargeIcon = builder::setLargeIcon,
-            updateNotification = {
-                val notification = MediaNotification(NextNotificationId, builder.build())
-                onNotificationChangedCallback.onNotificationChanged(notification)
-            }
-        )
+        Glide
+            .with(context)
+            .asBitmap()
+            .load(metadata.artworkUri)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .placeholder(R.drawable.cover_photo)
+            .error(R.drawable.cover_photo)
+            .listener(object : RequestListener<Bitmap> {
+                override fun onLoadFailed(e: GlideException?, model: Any?, target: com.bumptech.glide.request.target.Target<Bitmap>, isFirstResource: Boolean): Boolean {
+                    return false
+                }
+
+                override fun onResourceReady(resource: Bitmap, model: Any, target: com.bumptech.glide.request.target.Target<Bitmap>, dataSource: DataSource, isFirstResource: Boolean): Boolean {
+                    builder.setLargeIcon(resource)
+                    return false
+                }
+            }).submit()
 
         return MediaNotification(NextNotificationId, builder.build())
-    }
-
-    fun cancelCoroutineScope() = coroutineScope.cancel()
-
-    private fun setupArtwork(
-        uri: Uri?,
-        setLargeIcon: (Bitmap?) -> Unit,
-        updateNotification: () -> Unit
-    ) = coroutineScope.launch {
-        withContext(ioDispatcher) {
-            Glide
-                .with(context)
-                .asBitmap()
-                .load(uri)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .placeholder(R.drawable.cover_photo)
-                .error(R.drawable.cover_photo)
-                .listener(object : RequestListener<Bitmap> {
-                    override fun onLoadFailed(e: GlideException?, model: Any?, target: com.bumptech.glide.request.target.Target<Bitmap>, isFirstResource: Boolean): Boolean {
-                        return false
-                    }
-
-                    override fun onResourceReady(resource: Bitmap, model: Any, target: com.bumptech.glide.request.target.Target<Bitmap>, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                        setLargeIcon(resource)
-                        return false
-                    }
-                }).submit()
-        }
-
-        updateNotification()
     }
 
     override fun handleCustomCommand(session: MediaSession, action: String, extras: Bundle): Boolean {
