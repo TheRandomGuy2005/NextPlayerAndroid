@@ -6,11 +6,14 @@ plugins {
 
 android {
     namespace = "dev.anilbeesetti.nextplayer"
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "dev.anilbeesetti.nextplayer"
         versionCode = 11
         versionName = "0.9.0"
+        minSdk = 26
+        maxSdk = 34
     }
 
     buildFeatures {
@@ -31,6 +34,10 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
         }
+    }
+
+    kotlin {
+        jvmToolchain(17)
     }
 
     splits {
